@@ -44,6 +44,18 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq("id", userId)
+        await supabase
+          .from("subscription_states")
+          .upsert(
+            {
+              user_id: userId,
+              tier: "pro",
+              status: "active",
+              stripe_customer_id: session.customer as string,
+              stripe_subscription_id: session.subscription as string,
+            },
+            { onConflict: "user_id" }
+          )
         await supabase.from("ai_activity").insert({
           user_id: userId,
           type: "billing",
@@ -64,6 +76,11 @@ export async function POST(request: Request) {
 
       if (profile) {
         const isActive = subscription.status === "active"
+        const currentPeriodEnd =
+          "current_period_end" in subscription &&
+          typeof subscription.current_period_end === "number"
+            ? new Date(subscription.current_period_end * 1000).toISOString()
+            : null
         await supabase
           .from("profiles")
           .update({
@@ -73,6 +90,20 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq("id", profile.id)
+        await supabase
+          .from("subscription_states")
+          .upsert(
+            {
+              user_id: profile.id,
+              tier: isActive ? "pro" : "free",
+              status: subscription.status,
+              stripe_customer_id: customerId,
+              stripe_subscription_id: isActive ? subscription.id : null,
+              current_period_end: currentPeriodEnd,
+              cancel_at_period_end: subscription.cancel_at_period_end,
+            },
+            { onConflict: "user_id" }
+          )
       }
       break
     }

@@ -67,6 +67,18 @@ export interface WorkspaceData {
   hookPacks: SavedHookPack[]
   activity: ActivityEvent[]
   trending: TrendingTopic[]
+  preferences: {
+    defaultTone: string
+    defaultPlatform: Platform
+    defaultAudience: string
+    defaultGoal: string
+    niche: string | null
+  }
+  workspaceState: {
+    workspaceName: string
+    lastInput: GenerationInput | null
+    dashboardState: Record<string, unknown>
+  }
   workflows: WorkflowItem[]
   analytics: {
     engagementScore: number

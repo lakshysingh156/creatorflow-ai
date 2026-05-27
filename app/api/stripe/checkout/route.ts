@@ -47,6 +47,17 @@ export async function POST() {
         ?.from("profiles")
         .update({ stripe_customer_id: customerId })
         .eq("id", user.id)
+      await supabase
+        ?.from("subscription_states")
+        .upsert(
+          {
+            user_id: user.id,
+            tier: "free",
+            status: "inactive",
+            stripe_customer_id: customerId,
+          },
+          { onConflict: "user_id" }
+        )
     }
 
     const session = await stripe.checkout.sessions.create({

@@ -30,10 +30,22 @@ interface WorkspaceContextValue {
   generationsToday: number
   analytics: WorkspaceData["analytics"]
   profile: WorkspaceData["profile"]
+  preferences: WorkspaceData["preferences"]
+  workspaceState: WorkspaceData["workspaceState"]
   refresh: () => Promise<void>
   addGeneration: (result: GenerationResult) => void
   saveHookPack: (name: string, result: GenerationResult) => Promise<void>
-  removeSavedPack: (id: string) => void
+  removeSavedPack: (id: string) => Promise<void>
+  updateWorkflowStage: (
+    workflowId: string,
+    stage: WorkflowItem["stage"]
+  ) => Promise<void>
+  savePreferences: (
+    input: WorkspaceData["preferences"]
+  ) => Promise<void>
+  saveWorkspaceState: (
+    input: Partial<WorkspaceData["workspaceState"]>
+  ) => Promise<void>
   metrics: {
     totalGenerations: number
     savedPacks: number
@@ -101,10 +113,79 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const removeSavedPack = useCallback(
     async (id: string) => {
+      const previous = data.hookPacks ?? []
       setData((prev) => ({
         ...prev,
         hookPacks: (prev.hookPacks ?? []).filter((p) => p.id !== id),
       }))
+
+      const res = await fetch(`/api/hook-packs/${id}`, { method: "DELETE" })
+      if (!res.ok) {
+        setData((prev) => ({ ...prev, hookPacks: previous }))
+        throw new Error("Failed to delete pack")
+      }
+      await refresh()
+    },
+    [data.hookPacks, refresh]
+  )
+
+  const updateWorkflowStage = useCallback(
+    async (workflowId: string, stage: WorkflowItem["stage"]) => {
+      const previous = data.workflows ?? []
+      setData((prev) => ({
+        ...prev,
+        workflows: (prev.workflows ?? []).map((item) =>
+          item.id === workflowId
+            ? { ...item, stage, updatedAt: new Date().toISOString() }
+            : item
+        ),
+      }))
+
+      const res = await fetch(`/api/workflows/${workflowId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage }),
+      })
+
+      if (!res.ok) {
+        setData((prev) => ({ ...prev, workflows: previous }))
+        throw new Error("Failed to update workflow")
+      }
+      await refresh()
+    },
+    [data.workflows, refresh]
+  )
+
+  const savePreferences = useCallback(
+    async (input: WorkspaceData["preferences"]) => {
+      setData((prev) => ({ ...prev, preferences: input }))
+      const res = await fetch("/api/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to save preferences")
+    },
+    []
+  )
+
+  const saveWorkspaceState = useCallback(
+    async (input: Partial<WorkspaceData["workspaceState"]>) => {
+      setData((prev) => ({
+        ...prev,
+        workspaceState: {
+          workspaceName: prev.workspaceState?.workspaceName ?? "My Workspace",
+          lastInput: prev.workspaceState?.lastInput ?? null,
+          dashboardState: prev.workspaceState?.dashboardState ?? {},
+          ...input,
+        },
+      }))
+
+      await fetch("/api/workspace/state", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
     },
     []
   )
@@ -114,6 +195,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     engagementScore: 72,
     hookSuccessRate: 68,
     weeklyGenerations: 0,
+  }
+  const preferences = data.preferences ?? {
+    defaultTone: "Confident",
+    defaultPlatform: "TikTok" as const,
+    defaultAudience: "Beginners",
+    defaultGoal: "Grow followers",
+    niche: null,
+  }
+  const workspaceState = data.workspaceState ?? {
+    workspaceName: "My Workspace",
+    lastInput: null,
+    dashboardState: {},
   }
 
   const metrics = useMemo(
@@ -141,10 +234,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       generationsToday: data.generationsToday ?? 0,
       analytics,
       profile: data.profile ?? null,
+      preferences,
+      workspaceState,
       refresh,
       addGeneration,
       saveHookPack,
       removeSavedPack,
+      updateWorkflowStage,
+      savePreferences,
+      saveWorkspaceState,
       metrics,
       isPro: subscription.tier === "pro",
     }),
@@ -154,10 +252,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       data,
       subscription,
       analytics,
+      preferences,
+      workspaceState,
       refresh,
       addGeneration,
       saveHookPack,
       removeSavedPack,
+      updateWorkflowStage,
+      savePreferences,
+      saveWorkspaceState,
       metrics,
     ]
   )

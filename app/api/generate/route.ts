@@ -40,6 +40,8 @@ export async function POST(request: Request) {
         "@/lib/db/analytics"
       )
       const { createWorkflow } = await import("@/lib/db/workflows")
+      const { saveContentHistory } = await import("@/lib/db/content-history")
+      const { createStrategyFromGeneration } = await import("@/lib/db/strategies")
 
       let user
       try {
@@ -66,6 +68,8 @@ export async function POST(request: Request) {
 
       await Promise.allSettled([
         saveGeneration(user.id, result),
+        saveContentHistory(user.id, result),
+        createStrategyFromGeneration(user.id, result),
         incrementGenerationCount(user.id),
         updateAnalyticsFromGeneration(user.id, result.engagementPrediction),
         logActivity(
@@ -83,19 +87,25 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         ...result,
-        aiPowered: Boolean(process.env.GEMINI_API_KEY),
+        aiPowered: true,
       })
     }
 
-    // --- Demo mode: no auth, no DB, just generate ---
+    // --- Public mode: generate without persistence ---
     const result = await generateContent(input)
     return NextResponse.json({
       ...result,
-      aiPowered: Boolean(process.env.GEMINI_API_KEY),
+      aiPowered: true,
     })
   } catch (error) {
-    if (error instanceof Error && error.message.includes("rate limit")) {
-      return NextResponse.json({ error: error.message }, { status: 429 })
+    if (error instanceof Error) {
+      if (error.message.includes("rate limit")) {
+        return NextResponse.json({ error: error.message }, { status: 429 })
+      }
+      if (error.message.includes("GEMINI_API_KEY")) {
+        return NextResponse.json({ error: error.message }, { status: 503 })
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
     console.error("API /generate error:", error)
     return NextResponse.json(

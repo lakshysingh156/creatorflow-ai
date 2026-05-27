@@ -10,6 +10,7 @@ import {
   Sparkles,
   TrendingUp,
   Zap,
+  Trash2,
 } from "lucide-react"
 import { useWorkspace } from "@/contexts/workspace-context"
 import { cn } from "@/lib/utils"
@@ -58,7 +59,7 @@ function Panel({
 }
 
 export function WorkspacePanels() {
-  const { history, savedPacks, activity, trending, metrics, loading } =
+  const { history, savedPacks, activity, trending, metrics, loading, removeSavedPack } =
     useWorkspace()
 
   if (loading) {
@@ -220,6 +221,14 @@ export function WorkspacePanels() {
                     {pack.hooks.length} hooks · {pack.niche}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void removeSavedPack(pack.id)}
+                  className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Delete saved pack"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </li>
             ))}
           </ul>
@@ -227,31 +236,37 @@ export function WorkspacePanels() {
       </Panel>
 
       <Panel title="AI activity" icon={Activity}>
-        <ul className="space-y-2 max-h-36 overflow-y-auto">
-          {activity.slice(0, 6).map((event) => (
-            <li key={event.id} className="flex gap-2 text-xs">
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full mt-1.5 shrink-0",
-                  event.type === "generation" && "bg-accent",
-                  event.type === "save" && "bg-chart-3",
-                  event.type === "optimize" && "bg-chart-2",
-                  event.type === "trend" && "bg-chart-4"
-                )}
-              />
-              <div>
-                <p className="text-muted-foreground leading-snug">
-                  {event.message}
-                </p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  {formatDistanceToNow(new Date(event.timestamp), {
-                    addSuffix: true,
-                  })}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {activity.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">
+            Activity appears here as you generate and save content.
+          </p>
+        ) : (
+          <ul className="space-y-2 max-h-36 overflow-y-auto">
+            {activity.slice(0, 6).map((event) => (
+              <li key={event.id} className="flex gap-2 text-xs">
+                <span
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full mt-1.5 shrink-0",
+                    event.type === "generation" && "bg-accent",
+                    event.type === "save" && "bg-chart-3",
+                    event.type === "optimize" && "bg-chart-2",
+                    event.type === "trend" && "bg-chart-4"
+                  )}
+                />
+                <div>
+                  <p className="text-muted-foreground leading-snug">
+                    {event.message}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                    {formatDistanceToNow(new Date(event.timestamp), {
+                      addSuffix: true,
+                    })}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Panel>
     </div>
   )

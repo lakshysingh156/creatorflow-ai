@@ -5,6 +5,8 @@ import { Layers } from "lucide-react"
 import { useWorkspace } from "@/contexts/workspace-context"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useState } from "react"
+import type { WorkflowItem } from "@/lib/types"
 
 const stages = [
   { id: "idea", label: "Ideas", color: "bg-muted" },
@@ -14,7 +16,20 @@ const stages = [
 ] as const
 
 export function WorkflowPipeline() {
-  const { workflows, loading } = useWorkspace()
+  const { workflows, loading, updateWorkflowStage } = useWorkspace()
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+
+  const stageOrder: WorkflowItem["stage"][] = [
+    "idea",
+    "draft",
+    "scheduled",
+    "published",
+  ]
+
+  const getNextStage = (current: WorkflowItem["stage"]) => {
+    const index = stageOrder.indexOf(current)
+    return stageOrder[(index + 1) % stageOrder.length]
+  }
 
   if (loading) {
     return (
@@ -68,10 +83,20 @@ export function WorkflowPipeline() {
                   items.slice(0, 3).map((w) => (
                     <li
                       key={w.id}
-                      className="text-xs p-2 rounded-lg bg-card/40 border border-border/30 truncate"
+                      className="text-xs p-2 rounded-lg bg-card/40 border border-border/30 truncate cursor-pointer hover:border-accent/40 transition-colors disabled:opacity-60"
                       title={w.title}
+                      onClick={async () => {
+                        if (updatingId) return
+                        try {
+                          setUpdatingId(w.id)
+                          await updateWorkflowStage(w.id, getNextStage(w.stage))
+                        } finally {
+                          setUpdatingId(null)
+                        }
+                      }}
                     >
                       {w.title}
+                      {updatingId === w.id ? "..." : ""}
                     </li>
                   ))
                 )}

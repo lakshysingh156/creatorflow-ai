@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { AnimatePresence } from "framer-motion"
 import { Loader2, Shuffle, Sparkles } from "lucide-react"
@@ -22,8 +22,48 @@ export function CreatorStudio() {
   const [input, setInput] = useState<GenerationInput>(defaultGenerationInput)
   const { phase, thinkingStep, thinkingLabel, result, error, aiPowered, generate, isLoading } =
     useGeneration()
-  const { addGeneration, saveHookPack, isPro, generationsToday } = useWorkspace()
+  const {
+    addGeneration,
+    saveHookPack,
+    savePreferences,
+    saveWorkspaceState,
+    workspaceState,
+    preferences,
+    isPro,
+    generationsToday,
+  } = useWorkspace()
   const dailyLimit = PLANS.free.generationsPerDay
+  const hydratedInput = useMemo(
+    () =>
+      workspaceState.lastInput ?? {
+        ...defaultGenerationInput,
+        tone: preferences.defaultTone,
+        platform: preferences.defaultPlatform,
+        audience: preferences.defaultAudience,
+        goal: preferences.defaultGoal,
+        niche: preferences.niche ?? "",
+      },
+    [preferences, workspaceState.lastInput]
+  )
+
+  useEffect(() => {
+    setInput(hydratedInput)
+  }, [hydratedInput])
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      void saveWorkspaceState({ lastInput: input })
+      void savePreferences({
+        defaultTone: input.tone,
+        defaultPlatform: input.platform,
+        defaultAudience: input.audience,
+        defaultGoal: input.goal,
+        niche: input.niche || null,
+      })
+    }, 550)
+
+    return () => clearTimeout(timeout)
+  }, [input, savePreferences, saveWorkspaceState])
 
   const handleGenerate = async () => {
     if (!input.niche.trim()) {
@@ -37,7 +77,7 @@ export function CreatorStudio() {
       toast.success(
         powered
           ? "Content generated with Gemini"
-          : "Content generated — add GEMINI_API_KEY for live AI"
+          : "Content generated"
       )
     }
   }
@@ -77,7 +117,7 @@ export function CreatorStudio() {
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse" />
-          {aiPowered ? "Gemini AI" : "Demo mode"} ·{" "}
+          {aiPowered ? "Gemini AI" : "Gemini ready"} ·{" "}
           {isPro ? "Unlimited" : `${generationsToday}/${dailyLimit} today`}
         </div>
       </div>

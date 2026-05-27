@@ -1,5 +1,4 @@
 import type { GenerationInput, GenerationResult } from "./types"
-import { generateFallbackContent } from "./fallback-content"
 
 const GEMINI_MODEL = "gemini-2.0-flash"
 
@@ -93,14 +92,7 @@ export async function generateContent(
   const apiKey = process.env.GEMINI_API_KEY
 
   if (!apiKey) {
-    const fallback = generateFallbackContent(input)
-    return {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      input,
-      ...fallback,
-      durationMs: Date.now() - start,
-    }
+    throw new Error("GEMINI_API_KEY is missing. Configure it to generate content.")
   }
 
   try {
@@ -139,17 +131,9 @@ export async function generateContent(
     const parsed = parseGeminiText(text)
     return buildResult(input, parsed, Date.now() - start)
   } catch (error) {
-    if (error instanceof Error && error.message.includes("rate limit")) {
+    if (error instanceof Error) {
       throw error
     }
-    console.error("Generation error, using fallback:", error)
-    const fallback = generateFallbackContent(input)
-    return {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      input,
-      ...fallback,
-      durationMs: Date.now() - start,
-    }
+    throw new Error("Generation failed")
   }
 }

@@ -17,6 +17,18 @@ const DEMO_WORKSPACE = {
   workflows: [],
   analytics: { engagementScore: 72, hookSuccessRate: 68, weeklyGenerations: 0 },
   trending: INITIAL_TRENDING,
+  preferences: {
+    defaultTone: "Confident",
+    defaultPlatform: "TikTok",
+    defaultAudience: "Beginners",
+    defaultGoal: "Grow followers",
+    niche: null,
+  },
+  workspaceState: {
+    workspaceName: "My Workspace",
+    lastInput: null,
+    dashboardState: {},
+  },
   generationsToday: 0,
   subscription: { tier: "free", status: "demo" },
 }
@@ -37,6 +49,8 @@ export async function GET() {
     const { getActivity } = await import("@/lib/db/activity")
     const { getWorkflows } = await import("@/lib/db/workflows")
     const { getLatestAnalytics } = await import("@/lib/db/analytics")
+    const { getCreatorPreferences } = await import("@/lib/db/preferences")
+    const { getWorkspaceState } = await import("@/lib/db/workspace-state")
 
     let user
     try {
@@ -52,6 +66,8 @@ export async function GET() {
       activity,
       workflows,
       analytics,
+      preferences,
+      workspaceState,
       generationsToday,
     ] = await Promise.all([
       getUserProfile(user.id),
@@ -60,6 +76,8 @@ export async function GET() {
       getActivity(user.id),
       getWorkflows(user.id),
       getLatestAnalytics(user.id),
+      getCreatorPreferences(user.id),
+      getWorkspaceState(user.id),
       getGenerationsCountToday(user.id),
     ])
 
@@ -73,6 +91,8 @@ export async function GET() {
       workflows,
       analytics,
       trending: INITIAL_TRENDING,
+      preferences,
+      workspaceState,
       generationsToday,
       subscription: { tier: subscription.tier, status: subscription.status },
     })
