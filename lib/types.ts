@@ -66,6 +66,7 @@ export interface WorkspaceData {
   generations: GenerationResult[]
   hookPacks: SavedHookPack[]
   activity: ActivityEvent[]
+  trending: TrendingTopic[]
   workflows: WorkflowItem[]
   analytics: {
     engagementScore: number

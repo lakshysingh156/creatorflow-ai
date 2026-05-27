@@ -1,24 +1,21 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import { getSupabaseConfig } from "./config"
 
 export function isSupabaseConfigured(): boolean {
-  return !!(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  return getSupabaseConfig().isConfigured
 }
 
 export async function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const { url, anonKey } = getSupabaseConfig()
 
-  if (!url || !key) {
+  if (!url || !anonKey) {
     return null as never
   }
 
   const cookieStore = await cookies()
 
-  return createServerClient(url, key, {
+  return createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll()
@@ -37,15 +34,14 @@ export async function createClient() {
 }
 
 export async function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const { url, serviceRoleKey } = getSupabaseConfig()
 
-  if (!url || !serviceKey) return null as never
+  if (!url || !serviceRoleKey) return null as never
 
   const { createClient: createSupabaseClient } = await import(
     "@supabase/supabase-js"
   )
-  return createSupabaseClient(url, serviceKey, {
+  return createSupabaseClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 }

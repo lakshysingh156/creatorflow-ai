@@ -1,12 +1,12 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { getSupabaseConfig } from "./config"
 
 export async function updateSession(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const { url, anonKey } = getSupabaseConfig()
 
   // Allow app to load when Supabase isn't configured yet (local setup)
-  if (!url || !key) {
+  if (!url || !anonKey) {
     if (
       request.nextUrl.pathname.startsWith("/dashboard") ||
       request.nextUrl.pathname.startsWith("/workspace")
@@ -26,7 +26,7 @@ export async function updateSession(request: NextRequest) {
 
   let supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient(url, key, {
+  const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll()

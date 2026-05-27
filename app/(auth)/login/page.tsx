@@ -1,4 +1,5 @@
 import { AuthForm } from "@/components/auth/auth-form"
+import { isSupabaseConfigured } from "@/lib/supabase/server"
 
 export default async function LoginPage({
   searchParams,
@@ -6,10 +7,7 @@ export default async function LoginPage({
   searchParams: Promise<{ redirect?: string }>
 }) {
   const { redirect } = await searchParams
-  const supabaseConfigured = !!(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  const supabaseConfigured = isSupabaseConfigured()
   return (
     <AuthForm
       mode="login"

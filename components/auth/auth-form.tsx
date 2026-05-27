@@ -64,11 +64,11 @@ export function AuthForm({
         password: v.password,
         options: {
           data: { full_name: v.fullName },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/callback?next=/dashboard`,
         },
       })
       if (error) { setServerError(error.message); return }
-      router.push(redirectTo)
+      router.push("/login?check_email=1")
       router.refresh()
       return
     }
