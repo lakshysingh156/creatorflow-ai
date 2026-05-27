@@ -164,7 +164,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       })
-      if (!res.ok) throw new Error("Failed to save preferences")
+      if (!res.ok) {
+        const body = await res.json().catch(() => null as unknown)
+        const message =
+          body && typeof body === "object" && "error" in body
+            ? String((body as any).error)
+            : "Failed to save preferences"
+        throw new Error(message)
+      }
     },
     []
   )
@@ -181,11 +188,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         },
       }))
 
-      await fetch("/api/workspace/state", {
+      const res = await fetch("/api/workspace/state", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null as unknown)
+        const message =
+          body && typeof body === "object" && "error" in body
+            ? String((body as any).error)
+            : "Failed to save workspace state"
+        throw new Error(message)
+      }
     },
     []
   )

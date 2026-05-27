@@ -50,7 +50,7 @@ export function ConfigCommandBar({
     <div className="space-y-4">
       <div className="relative">
         <div className="absolute -inset-0.5 bg-accent/10 rounded-2xl blur-lg opacity-60" />
-        <div className="relative glass-strong rounded-2xl border-glow overflow-hidden">
+        <div className="relative glass-strong rounded-2xl border-glow">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-secondary/20">
             <Command className="w-4 h-4 text-accent shrink-0" />
             <span className="text-xs font-medium text-muted-foreground tracking-wide">

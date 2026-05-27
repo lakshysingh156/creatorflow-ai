@@ -106,9 +106,11 @@ begin
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1))
-  );
+  )
+  on conflict (id) do nothing;
   insert into public.creator_preferences (user_id)
-  values (new.id);
+  values (new.id)
+  on conflict (user_id) do nothing;
   insert into public.analytics_snapshots (user_id, engagement_score, hook_success_rate, weekly_generations)
   values (new.id, 72, 68, 0);
   insert into public.ai_activity (user_id, type, message)
@@ -131,17 +133,26 @@ alter table public.ai_activity enable row level security;
 alter table public.analytics_snapshots enable row level security;
 alter table public.workflows enable row level security;
 
+drop policy if exists "Users read own profile" on public.profiles;
 create policy "Users read own profile" on public.profiles for select using (auth.uid() = id);
+
+drop policy if exists "Users update own profile" on public.profiles;
 create policy "Users update own profile" on public.profiles for update using (auth.uid() = id);
 
+drop policy if exists "Users manage own preferences" on public.creator_preferences;
 create policy "Users manage own preferences" on public.creator_preferences for all using (auth.uid() = user_id);
 
+drop policy if exists "Users manage own generations" on public.generations;
 create policy "Users manage own generations" on public.generations for all using (auth.uid() = user_id);
 
+drop policy if exists "Users manage own hook packs" on public.hook_packs;
 create policy "Users manage own hook packs" on public.hook_packs for all using (auth.uid() = user_id);
 
+drop policy if exists "Users manage own activity" on public.ai_activity;
 create policy "Users manage own activity" on public.ai_activity for all using (auth.uid() = user_id);
 
+drop policy if exists "Users manage own analytics" on public.analytics_snapshots;
 create policy "Users manage own analytics" on public.analytics_snapshots for all using (auth.uid() = user_id);
 
+drop policy if exists "Users manage own workflows" on public.workflows;
 create policy "Users manage own workflows" on public.workflows for all using (auth.uid() = user_id);

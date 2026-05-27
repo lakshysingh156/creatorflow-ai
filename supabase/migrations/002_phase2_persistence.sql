@@ -21,6 +21,7 @@ create table if not exists public.creator_workspaces (
   updated_at timestamptz not null default now()
 );
 
+drop trigger if exists creator_workspaces_set_updated_at on public.creator_workspaces;
 create trigger creator_workspaces_set_updated_at
   before update on public.creator_workspaces
   for each row execute procedure public.set_updated_at();
@@ -41,6 +42,7 @@ create table if not exists public.creator_strategies (
 create index if not exists creator_strategies_user_id_idx on public.creator_strategies(user_id);
 create index if not exists creator_strategies_created_at_idx on public.creator_strategies(created_at desc);
 
+drop trigger if exists creator_strategies_set_updated_at on public.creator_strategies;
 create trigger creator_strategies_set_updated_at
   before update on public.creator_strategies
   for each row execute procedure public.set_updated_at();
@@ -74,6 +76,7 @@ create table if not exists public.subscription_states (
   updated_at timestamptz not null default now()
 );
 
+drop trigger if exists subscription_states_set_updated_at on public.subscription_states;
 create trigger subscription_states_set_updated_at
   before update on public.subscription_states
   for each row execute procedure public.set_updated_at();
@@ -121,7 +124,11 @@ alter table public.creator_strategies enable row level security;
 alter table public.content_history enable row level security;
 alter table public.subscription_states enable row level security;
 
+drop policy if exists "Users manage own workspace state" on public.creator_workspaces;
 create policy "Users manage own workspace state" on public.creator_workspaces for all using (auth.uid() = user_id);
+drop policy if exists "Users manage own strategies" on public.creator_strategies;
 create policy "Users manage own strategies" on public.creator_strategies for all using (auth.uid() = user_id);
+drop policy if exists "Users manage own content history" on public.content_history;
 create policy "Users manage own content history" on public.content_history for all using (auth.uid() = user_id);
+drop policy if exists "Users manage own subscription states" on public.subscription_states;
 create policy "Users manage own subscription states" on public.subscription_states for all using (auth.uid() = user_id);

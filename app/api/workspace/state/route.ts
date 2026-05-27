@@ -49,7 +49,24 @@ export async function PATCH(request: Request) {
     const user = await requireUser()
     await upsertWorkspaceState(user.id, parsed.data)
     return NextResponse.json({ ok: true })
-  } catch {
-    return NextResponse.json({ error: "Failed to save workspace state" }, { status: 500 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : ""
+    if (
+      typeof message === "string" &&
+      (message.includes("relation") || message.includes("does not exist"))
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Database not initialized. Apply Supabase migrations (creator_workspaces table) and try again.",
+        },
+        { status: 503 }
+      )
+    }
+    console.error("Workspace state save error:", err)
+    return NextResponse.json(
+      { error: "Failed to save workspace state" },
+      { status: 500 }
+    )
   }
 }

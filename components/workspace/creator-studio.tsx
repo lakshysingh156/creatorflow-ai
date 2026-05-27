@@ -29,6 +29,7 @@ export function CreatorStudio() {
     saveWorkspaceState,
     workspaceState,
     preferences,
+    profile,
     isPro,
     generationsToday,
   } = useWorkspace()
@@ -52,18 +53,31 @@ export function CreatorStudio() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      void saveWorkspaceState({ lastInput: input })
-      void savePreferences({
-        defaultTone: input.tone,
-        defaultPlatform: input.platform,
-        defaultAudience: input.audience,
-        defaultGoal: input.goal,
-        niche: input.niche || null,
-      })
+      // Only persist user settings once authenticated + workspace hydrated.
+      if (!profile) return
+
+      ;(async () => {
+        try {
+          await saveWorkspaceState({ lastInput: input })
+        } catch {
+          // Non-blocking: UI should keep working even if persistence is unavailable.
+        }
+        try {
+          await savePreferences({
+            defaultTone: input.tone,
+            defaultPlatform: input.platform,
+            defaultAudience: input.audience,
+            defaultGoal: input.goal,
+            niche: input.niche || null,
+          })
+        } catch {
+          // Non-blocking: avoid unhandled promise rejections in the browser.
+        }
+      })()
     }, 550)
 
     return () => clearTimeout(timeout)
-  }, [input, savePreferences, saveWorkspaceState])
+  }, [input, profile, savePreferences, saveWorkspaceState])
 
   const handleGenerate = async () => {
     if (!input.niche.trim()) {

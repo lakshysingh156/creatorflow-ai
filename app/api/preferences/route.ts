@@ -42,7 +42,22 @@ export async function PATCH(request: Request) {
 
     await upsertCreatorPreferences(user.id, parsed.data)
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to save preferences"
+    // Common failure during setup: migrations not yet applied.
+    if (
+      typeof message === "string" &&
+      (message.includes("relation") || message.includes("does not exist"))
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Database not initialized. Apply Supabase migrations (creator_preferences table) and try again.",
+        },
+        { status: 503 }
+      )
+    }
+    console.error("Preferences save error:", err)
     return NextResponse.json({ error: "Failed to save preferences" }, { status: 500 })
   }
 }
